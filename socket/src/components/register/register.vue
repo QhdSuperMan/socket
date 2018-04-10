@@ -43,7 +43,6 @@ export default{
         // 注册功能
         if (checkUser(this.user, this.password) === '正确') {
           axios.get(`api/register?user=${this.user}&password=${this.password}`).then((data) => {
-            console.log(data)
             if (data.data.code === 0) {
               this.$message({
                 message: data.data.msg,
@@ -70,12 +69,14 @@ export default{
       } else {
         // 登录功能
         axios.get(`api/login?user=${this.user}&password=${this.password}`).then((data) => {
-          console.log(data)
           if (data.data.code === 0) {
             this.$message({
               message: data.data.msg,
               type: 'success'
             })
+            setTimeout(() => {
+              this.$router.push('/')
+            }, 500)
           } else {
             this.$message({
               message: data.data.msg,
@@ -87,6 +88,7 @@ export default{
     }
   },
   mounted () {
+    console.log(this)
     fireworks(this.$refs.canvas)
     this.isShow = true
   }

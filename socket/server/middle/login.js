@@ -1,11 +1,14 @@
 const express = require('express');
 const login = express.Router()
 const connect = require('../base/initmysql')
+const sessionParser = require('express-session');
+const cookieParser = require('cookie-parser');
 
 login.get('/login',(req,res)=>{
-  checkLogin(req.query.user,req.query.password,res)
+  checkLogin(req.query.user,req.query.password,req,res)
 })
-function checkLogin(user,password,res){
+// 验证登录
+function checkLogin(user,password,req,res){
   connect.getConnection((err,conc)=>{
     if(err) throw err;
     let sql = `SELECT password FROM user where usename='${user}'`
@@ -14,6 +17,9 @@ function checkLogin(user,password,res){
       conc.release()
       if(result.length !== 0){
         if(result[0].password == password){
+          res.cookie('id',user)
+          req.session.user = {user:user,password:password}
+          req.session.save() 
           res.send(JSON.stringify({code:0,msg:"登录成功" }))
           return 
         }
@@ -22,4 +28,5 @@ function checkLogin(user,password,res){
     })
   })
 }
+
 module.exports = login
