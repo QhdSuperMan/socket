@@ -2,20 +2,20 @@
   <div class='home' >
     <div class='main'  >
       <el-row  >
-        <el-col :xl='8' :lg='8' :sm='8' :md='8' class='Main_left' >
+        <el-col :xs='8' :xl='8' :lg='8' :sm='8' :md='8' class='Main_left' >
           <div class='l_header' >
             <headerImg class='l_title' />
-
-            <div class='l_search' >
-
-            </div>
-            <div class='l_control' >
-
+            <el-input class='l_search' placeholder='请输入搜索内容' prefix-icon="el-icon-search"
+            size='small' >
+            </el-input>
+            <div class='l_control'>
+              <span v-for='(val,item) in icon_class' :key='item' @click='changeIndex(item)'>
+                <i :class='item === icon_controll ? `${val} active`:val'></i>
+              </span>
             </div>
           </div>
         </el-col>
-        <el-col :xl='16' :lg='16' :sm='16' :md='16' class='Main_right' >
-
+        <el-col :xs='16' :xl='16' :lg='16' :sm='16' :md='16' class='Main_right' >
         </el-col>
       </el-row>
     </div>
@@ -28,10 +28,14 @@ import headerImg from '@/base/title.vue'
 export default{
   data () {
     return {
-      msg: 1
+      icon_controll: 0,
+      icon_class: [
+        'el-icon-time', 'el-icon-mobile-phone', 'el-icon-tickets'
+      ]
     }
   },
   created () {
+    document.body.height = window.innerHeight + 'px'
     this.checkLogin()
   },
   methods: {
@@ -47,6 +51,9 @@ export default{
           }, 500)
         }
       })
+    },
+    changeIndex (item) {
+      this.icon_controll = item
     }
   },
   components: {
@@ -71,7 +78,22 @@ export default{
     height:500px
     .Main_left
       height:500px
-      background-color:rgb(153,157,159)
+      background-color:rgb(46,50,56)
+      .l_header
+        padding:10px
+      .l_search
+        padding:5px 0px
+      .l_control
+        padding:10px 0px
+        font-size:0px
+        span
+          font-size:18px
+          display:inline-block
+          color:white
+          text-align:center
+          width:33%
+        .active
+          color:green
     .Main_right
       height:500px
       background-color:rgb(230,230,230)

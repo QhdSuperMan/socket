@@ -5,7 +5,7 @@
       <div class='register_form' v-show='isShow'  >
         <span v-text='!login ? "?去登录" : "?去注册"' class='constroll' @click='constrollChange'  ></span>
         <h1 v-text='login ? "登录" : "注册"' ></h1>
-        <el-input  size='small' class='int'  placeholder='请输入用户名' clearable v-model='user'  >
+        <el-input  size='small' class='int'  placeholder='请输入用户名' clearable v-model='user'  autofocus >
           <i slot="prefix" class="el-icon-tickets int_icon"></i>
         </el-input>
         <el-input type='password' size='small' class='int'  placeholder="请输入密码"  v-model='password' clearable>
