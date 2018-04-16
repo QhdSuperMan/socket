@@ -1,1 +1,1 @@
-export const login = state => state.isLogin
+export const getHeadUrl = state => state.headUrl

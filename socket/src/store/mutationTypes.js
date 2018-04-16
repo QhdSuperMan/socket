@@ -1,1 +1,1 @@
-export const SET_LOGIN = 'LOGIN'
+export const SET_HEADIMG = 'HEADIMG'

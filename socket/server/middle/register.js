@@ -16,7 +16,7 @@ function checkUser (user, password,res) {
       if(result.length != 0){
         res.send(JSON.stringify({code:1,msg:'该用户名已经注册'}))
       }else{
-        let sql ="INSERT INTO user(id,usename,password,sex,address,headPic,frends,groups) VALUES (null,'"+user+"','"+password+"',0,'','','','')"
+        let sql ="INSERT INTO user(id,usename,password,sex,address,headPic,friends,groups) VALUES (null,'"+user+"','"+password+"',0,'','api/imgdic?src=gail.png','','')"
         conc.query(sql,(err,result)=>{
         if(err) throw err;
           res.send(JSON.stringify({code:0,msg:'注册成功'}))

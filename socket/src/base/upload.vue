@@ -73,7 +73,12 @@ export default {
           'Content-type': 'application/x-www-form-urlencoded'
         }
       }).then(res => {
-        // console.log(res)
+        this.again = false
+        this.$emit('update')
+        this.$message({
+          message: '上传成功',
+          type: 'success'
+        })
       })
     }
   }

@@ -27,12 +27,26 @@ var uploadMulter = multer({storage:storage})
 upLoad.post('/upload',uploadMulter.single('file'),(req,res) => {
   connect.getConnection((err, conc) => {
     if(err) throw err; 
-    var sql="SELECT * "
+    var sql="SELECT headPic FROM user where usename='"+req.cookies.id+"'"
+    conc.query(sql,(err,result)=>{
+      if(err) throw err;
+      if(!result){
+        return 
+      };
+      if(result[0].headPic){
+        var url = result[0].headPic.slice(result[0].headPic.indexOf('=')+1,result[0].headPic.length)
+        if(url !== 'gail.png'){
+          fs.unlink(`public/upload/${url}`,(err,result)=>{
+            if(err) throw err;
+          })
+        }
+      }
+    })
     var sql="UPDATE user SET headPic='api/imgdic?src="+req.file.filename+"' where usename='"+req.cookies.id+"'"
     conc.query(sql,(err,result)=>{
       if(err) throw err;
-      // console.log(result)
     })
+    conc.release()
   })
   res.json({code:0})
 })

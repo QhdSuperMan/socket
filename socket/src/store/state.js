@@ -1,4 +1,4 @@
 const state = {
-  isLogin: []
+  headUrl: ''
 }
 export default state

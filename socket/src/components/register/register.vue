@@ -88,7 +88,6 @@ export default{
     }
   },
   mounted () {
-    console.log(this)
     fireworks(this.$refs.canvas)
     this.isShow = true
   }
