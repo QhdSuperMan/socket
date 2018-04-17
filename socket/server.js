@@ -54,7 +54,6 @@ io.on('connection',(socket)=>{
       connecBox.push(Object.assign({app:socket,id:socket.id},msg))
     // code 等于1 聊天
     } else if(msg.code ===1) {
-      console.log(connecBox)
       connecBox.forEach(val => {
         if (val.usename === msg.sendTo){
           // console.log(val)

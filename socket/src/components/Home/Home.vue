@@ -12,13 +12,30 @@
               <span v-for='(val,item) in icon_class' :key='item' @click='changeIndex(item)'>
                 <i :class='item === icon_controll ? `${val} active`:val'></i>
               </span>
+              <div class='messageCount' v-if='messageCount !== 0' >
+                <span>{{ messageCount }}</span>
+              </div>
             </div>
           </div>
           <linkMan v-show='icon_controll===1' :linkList='linkManData'  @openChat='openChat' />
+          <div v-show='icon_controll===0' class='chatArray' >
+            <div v-for='(val,key) in chatArray' :key='key' class='chatArrayItem clear' @click='openChatBox(val)'>
+              <div class='chat_header'>
+                <img :src="val.img" alt="头像">
+              </div>
+              <div class='chat_info' >
+                <p>{{ val.usename }}</p>
+                <p>{{ val.msg }}</p>
+              </div>
+              <div class='chat_time' >
+                <span>{{ val.time }}</span>
+              </div>
+            </div>
+          </div>
           <searchList :searchArray='searchArray' @lookDetai='goToDetail' v-if='searchisShow' @addFriends='addFriends'  class='searchList'   />
         </el-col>
         <el-col :xs='16' :xl='16' :lg='16' :sm='16' :md='16' class='Main_right' >
-          <chat v-if='chatIsShow'  :chatInfo='charData' @close='closeChat' :socket='socket'   />
+          <chat v-if='chatIsShow'  :chatInfo='charData' @close='closeChat' :socket='socket' ref='char' @message='updateArray'   />
           <detail  :detailObj='detailData' v-if='detailData.usename' @closeDetai='closeDetail' @addFriends='addFriends' />
         </el-col>
       </el-row>
@@ -33,9 +50,10 @@ import searchList from '@/base/searchList'
 import detail from '@/base/detail'
 import linkMan from '@/base/linkMan'
 import chat from '@/components/chat/chat'
-import { getUsename } from 'assets/js/cookie'
 import { config } from 'assets/js/config'
 import { mapGetters } from 'vuex'
+import { getHistory, setHistory } from 'assets/js/session'
+import { charHistory } from 'assets/js/chat'
 export default{
   data () {
     return {
@@ -50,12 +68,16 @@ export default{
       linkManData: [],
       chatIsShow: false,
       charData: [],
-      socket: {}
+      socket: {},
+      // 会话数组 数组包括 图片。usename ，时间，最后一句话。
+      chatArray: [],
+      messageCount: 0
     }
   },
   computed: {
     ...mapGetters([
-      'getHeadUrl'
+      'getHeadUrl',
+      'getUsename'
     ])
   },
   created () {
@@ -67,12 +89,52 @@ export default{
     }, 200)
   },
   methods: {
+    openChatBox (val) {
+      this.charData = val
+      this.chatIsShow = true
+    },
+    // 获取当前时间
+    getNowTime () {
+      let date = new Date()
+      return `${date.getHours() >= 10 ? date.getHours() : '0' + date.getHours()} : ${date.getMinutes() >= 10 ? date.getMinutes() : '0' + date.getMinutes()}`
+    },
+    onMessage (val) {
+      this.messageCount += 1
+      for (let i = 0; i < this.chatArray.length; i++) {
+        if (this.chatArray[i].usename === val.usename) {
+          this.chatArray[i].history.push(val)
+          setHistory(val.usename, this.chatArray[i].history)
+          this.chatArray[i].msg = val.msg
+          this.chatArray[i].time = this.getNowTime()
+          return
+        }
+      }
+      /* eslint-disable-next-line */
+      this.chatArray.push(new charHistory({usename: val.usename, img: val.img, time: this.getNowTime(), history: getHistory(val.usename), msg: val.msg}))
+    },
+    // 更新数组
+    updateArray (user) {
+      for (let i = 0; i < this.chatArray.length; i++) {
+        if (this.chatArray[i].usename === user) {
+          this.chatArray[i].history = getHistory(user)
+          this.chatArray[i].msg = this.chatArray[i].history[this.chatArray[i].history.length - 1].msg
+        }
+      }
+    },
     // 连接socket服务
     connectSocket () {
       /* eslint-disable-next-line */
       this.socket = io.connect('ws://127.0.0.1:8081')
       // socket默认配置，以及用户信息发送
-      this.socket.emit('msg', Object.assign({code: 0, usename: getUsename(' id'), img: this.getHeadUrl}, config))
+      this.socket.emit('msg', Object.assign({code: 0, usename: this.getUsename, img: this.getHeadUrl}, config))
+      // 监听消息
+      this.socket.on('msg', (data) => {
+        if (this.chatIsShow) {
+          this.$refs.char.message(data)
+        }
+        this.onMessage(data)
+        // 改变会话数组
+      })
     },
     closeChat () {
       this.chatIsShow = false
@@ -80,9 +142,18 @@ export default{
     openChat (val) {
       this.chatIsShow = true
       this.charData = val
+      // 添加到会话数组
+      for (let i = 0; i < this.chatArray.length; i++) {
+        if (this.chatArray[i].usename === val.usename) {
+          return ''
+        }
+      }
+      let data = getHistory(val.usename)
+      /* eslint-disable-next-line */
+      this.chatArray.push(new charHistory({usename: val.usename, img: val.img, time: '', history: data, msg: data.length > 0 ? data[data.length - 1].msg : ''}))
     },
     getLinkMan () {
-      axios.get('api/linkman').then(result => {
+      axios.get(`api/linkman?user=${this.getUsename}`).then(result => {
         result.data = result.data.map((val) => {
           return JSON.parse(val)
         })
@@ -172,8 +243,21 @@ export default{
         width:90%
         padding:5px 0px
       .l_control
+        position: relative
         padding:10px 0px
         font-size:0px
+        .messageCount
+          position:absolute
+          top:0px
+          left:35px
+          span
+            display:block
+            width:20px
+            height:10px
+            border-radius:10px
+            background-color:rgb(153,157,159)
+            font-size:10px
+            color:red
         span
           font-size:18px
           display:inline-block
@@ -182,6 +266,33 @@ export default{
           width:33%
         .active
           color:green
+      .chatArray
+        color:white
+        font-size:14px
+        .chatArrayItem
+          padding:10px
+          .chat_header
+            img
+              margin-right:8px
+              width:50px
+              height:50px
+              border-radius:50%
+          .chat_info
+            line-height:25px
+            p:last-child
+              font-size:10px
+              text-align:left
+            p
+              width:80px
+              text-overflow:ellipsis
+              white-space:nowrap
+              overflow:hidden
+          .chat_time
+            font-size:12px
+            line-height:25px
+          div
+            float:left
+            height:50px
       .searchList
         padding-top:10px
         position:absolute

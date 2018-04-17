@@ -8,12 +8,12 @@
       </div>
       <div class='chatbody' ref='chatBox'>
         <div class='chatHistory' ref='chatMain' >
-          <div class='chatItem' :style='val.entry ===0 ? "text-align:right" : "text-align:left"'  v-for='(val,key) in chatHistory' :key='key'>
+          <div class='chatItem' :style='val.entry ===0 ? "text-align:right" : "text-align:left"'   v-for='(val,key) in chatHistory' :key='key'>
             <span class='chatSpan' >
               <img :src="val.img" alt="" class='chatImg' :style='val.entry ===0 ? "float:right" : "float:left"' >
               <div class='chatMessage'>
                 <p class='chatName'>{{ val.usename }}</p>
-                <span class='chatInfo' >{{ val.msg }}</span>
+                <span class='chatInfo clear' :style='"color:"+val.color' v-html='val.msg' ></span>
               </div>
             </span>
           </div>
@@ -21,7 +21,7 @@
       </div>
       <div class='chatFooter' >
         <div class='chatTool' >
-          <input type="color">
+          <input type="color" @change='colorChange' >
           <span><i class='icon iconfont icon-libraryicon01' ></i></span>
           <span><i class='icon iconfont icon-biaoqing' ></i></span>
         </div>
@@ -36,28 +36,55 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { getUsename } from 'assets/js/cookie'
+import { getHistory, setHistory } from 'assets/js/session'
+// import { getUsename } from 'assets/js/cookie'
 export default {
   data () {
     return {
       InputMessage: '',
       chatHistory: [
         // {entry: 0, img: this.chatInfo.img, usename: this.chatInfo.usename, msg: '你好的就是结合实际黄金时代环境还是的季后赛的季后赛函数的函数见好就收大手大脚'}
-      ]
+      ],
+      color: 'black',
+      translateLength: 0
     }
   },
   computed: {
     ...mapGetters([
-      'getHeadUrl'
+      'getHeadUrl',
+      'getUsename'
     ])
   },
   watch: {
+    // 监听联系人变化存到session
+    chatInfo (newChat, oldChat) {
+      setHistory(oldChat.usename, this.chatHistory)
+      this.chatHistory = getHistory(newChat.usename)
+    },
     chatHistory (newHistory) {
       setTimeout(() => {
         if (this.$refs.chatMain.offsetHeight > this.$refs.chatBox.offsetHeight) {
           this.$refs.chatMain.style.transform = `translate3d(0, -${this.$refs.chatMain.offsetHeight - this.$refs.chatBox.offsetHeight}px, 0)`
+          this.translateLength = -(this.$refs.chatMain.offsetHeight - this.$refs.chatBox.offsetHeight)
         }
       }, 20)
+    },
+    translateLength (newL) {
+      let WH = this.$refs.chatBox.offsetHeight
+      let NH = this.$refs.chatMain.offsetHeight
+      if (newL + NH < WH) {
+        setTimeout(() => {
+          this.translateLength = WH - NH
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+          return ''
+        }, 500)
+      }
+      if (newL > 0) {
+        setTimeout(() => {
+          this.translateLength = 0
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        }, 500)
+      }
     }
   },
   props: {
@@ -71,9 +98,33 @@ export default {
     }
   },
   methods: {
+    // 颜色改变
+    colorChange (e) {
+      this.color = e.target.value
+    },
     MouseScroll (e) {
-      if (e.target.className === 'chatbody') {
-        console.log(e)
+      let WH = this.$refs.chatBox.offsetHeight
+      let NH = this.$refs.chatMain.offsetHeight
+      if (WH > NH) {
+        return
+      }
+      if (e.wheelDelta) {
+        if (e.wheelDelta > 0) {
+          // 谷歌。向上滚动
+          this.translateLength = this.translateLength - (e.wheelDelta / 1)
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        } else {
+          // 向下滚动
+          this.translateLength = this.translateLength - (e.wheelDelta / 1)
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        }
+      } else {
+        // 火狐
+        if (e.detail > 0) {
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        } else {
+          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        }
       }
     },
     sendMessage (e) {
@@ -84,28 +135,34 @@ export default {
         this.InputMessage += '\n'
         return 0
       }
-      // 绘制
-      this.chatHistory.push({entry: 0, img: this.getHeadUrl, usename: getUsename(' id'), msg: this.InputMessage})
-      this.socket.emit('msg', {sendTo: this.chatInfo.usename, code: 1, entry: 1, msg: this.InputMessage, usename: getUsename(' id'), img: this.getHeadUrl})
+      // 绘制 //vuex 开发用
+      this.chatHistory.push({entry: 0, img: this.getHeadUrl, usename: this.getUsename, msg: this.InputMessage, color: this.color})
+      this.socket.emit('msg', {sendTo: this.chatInfo.usename, code: 1, entry: 1, msg: this.InputMessage, usename: this.getUsename, img: this.getHeadUrl, color: this.color})
       this.InputMessage = ''
+      setHistory(this.chatInfo.usename, this.chatHistory)
+      this.$emit('message', this.chatInfo.usename)
     },
     message (msg) {
-      this.chatHistory.push(msg)
+      if (msg.usename === this.chatInfo.usename) {
+        this.chatHistory.push(msg)
+      }
     },
     close () {
       this.$emit('close')
     }
   },
   created () {
-    this.socket.on('msg', (data) => {
-      this.message(data)
-    })
-    if (document.addEventListener) {
-      document.addEventListener('DOMMouseScroll', () => {
-        this.MouseScroll()
+    setTimeout(() => {
+      // 从本地获取聊天记录
+      this.chatHistory = getHistory(this.chatInfo.usename)
+      let timer
+      this.$refs.chatBox.addEventListener('mousewheel', (e) => {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          this.MouseScroll(e)
+        }, 50)
       })
-    }
-    window.onmousewheel = document.onmousewheel = this.MouseScroll
+    }, 20)
   }
 }
 </script>
@@ -133,7 +190,6 @@ export default {
     height:360px
     background-color :white
     .chatHistory
-      transition:all 0.5s linear
       .chatItem
         padding:10px
         .chatSpan
@@ -146,11 +202,15 @@ export default {
             height:50px
             border-radius:50%
           .chatInfo
+            text-align:left
+            word-wrap:break-word
+            word-break:break-all
             display:inline-block
             max-width:200px
+            min-width:20px
             padding:10px
             border-radius:10px
-            background-color:blue
+            background-color:rgb(82,139,188)
   .chatFooter
     box-sizing:border-box
     width:100%

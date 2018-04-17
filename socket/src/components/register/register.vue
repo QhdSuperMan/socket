@@ -20,6 +20,7 @@
 <script>
 import fireworks from 'assets/js/fireworks'
 import { checkUser } from 'assets/js/base'
+import { mapMutations } from 'vuex'
 import axios from 'axios'
 export default{
   data () {
@@ -74,6 +75,7 @@ export default{
               message: data.data.msg,
               type: 'success'
             })
+            this.setUsename(this.user)
             setTimeout(() => {
               this.$router.push('/')
             }, 500)
@@ -85,7 +87,10 @@ export default{
           }
         })
       }
-    }
+    },
+    ...mapMutations({
+      'setUsename': 'USENAME'
+    })
   },
   mounted () {
     fireworks(this.$refs.canvas)

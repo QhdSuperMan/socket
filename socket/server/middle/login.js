@@ -18,10 +18,10 @@ function checkLogin(user,password,req,res){
       if(result.length !== 0){
         if(result[0].password == password){
           res.cookie('id',user)
-          req.session.user = {user:user,password:password}
+          req.session[user] = {user:user,password:password}
           req.session.save() 
           res.send(JSON.stringify({code:0,msg:"登录成功" }))
-          return 
+          return
         }
       }
       res.send(JSON.stringify({code:1,msg:"登录失败,请检查用户名或者密码" }))

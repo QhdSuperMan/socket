@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { mapMutations } from 'vuex'
+import { mapMutations, mapGetters } from 'vuex'
 import axios from 'axios'
 import upload from './upload'
 import menuList from '@/components/menu/menu'
@@ -29,6 +29,11 @@ export default{
       UploadisShow: false,
       menuListisShow: false
     }
+  },
+  computed: {
+    ...mapGetters([
+      'getUsename'
+    ])
   },
   watch: {
     url (newImg) {
@@ -74,9 +79,9 @@ export default{
       })
     },
     getHeaderImg () {
-      axios.get('api/getImg').then((data) => {
+      this.msg = this.getUsename
+      axios.get(`api/getImg?user=${this.getUsename}`).then((data) => {
         if (data.data.code === 0) {
-          this.msg = data.data.user
           this.url = data.data.headerUrl
           // if (!data.data.headerUrl) {
           //   if (data.data.sex === 0) {
