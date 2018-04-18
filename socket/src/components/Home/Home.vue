@@ -4,7 +4,7 @@
       <el-row  >
         <el-col :xs='8' :xl='8' :lg='8' :sm='8' :md='8' class='Main_left' >
           <div class='l_header' >
-            <headerImg class='l_title' />
+            <headerImg class='l_title' v-if='this.getUsename' />
             <el-input class='l_search' placeholder='请输入搜索内容' prefix-icon="el-icon-search" @change='queryChange' clearable
             size='small' >
             </el-input>
@@ -25,7 +25,7 @@
               </div>
               <div class='chat_info' >
                 <p>{{ val.usename }}</p>
-                <p>{{ val.msg }}</p>
+                <p v-html='val.msg'></p>
               </div>
               <div class='chat_time' >
                 <span>{{ val.time }}</span>
@@ -70,11 +70,17 @@ export default{
       charData: [],
       socket: {},
       // 会话数组 数组包括 图片。usename ，时间，最后一句话。
-      chatArray: [],
-      messageCount: 0
+      chatArray: []
     }
   },
   computed: {
+    messageCount () {
+      let count = 0
+      for (let i = 0; i < this.chatArray.length; i++) {
+        count += this.chatArray[i].count
+      }
+      return count
+    },
     ...mapGetters([
       'getHeadUrl',
       'getUsename'
@@ -83,7 +89,9 @@ export default{
   created () {
     document.body.height = window.innerHeight + 'px'
     this.checkLogin()
-    this.getLinkMan()
+    if (this.getUsename) {
+      this.getLinkMan()
+    }
     setTimeout(() => {
       this.connectSocket()
     }, 200)
@@ -92,6 +100,8 @@ export default{
     openChatBox (val) {
       this.charData = val
       this.chatIsShow = true
+      val.count = 0
+      this.$refs.char.$refs.chatMain.style.transition = ''
     },
     // 获取当前时间
     getNowTime () {
@@ -99,18 +109,24 @@ export default{
       return `${date.getHours() >= 10 ? date.getHours() : '0' + date.getHours()} : ${date.getMinutes() >= 10 ? date.getMinutes() : '0' + date.getMinutes()}`
     },
     onMessage (val) {
-      this.messageCount += 1
       for (let i = 0; i < this.chatArray.length; i++) {
         if (this.chatArray[i].usename === val.usename) {
           this.chatArray[i].history.push(val)
           setHistory(val.usename, this.chatArray[i].history)
           this.chatArray[i].msg = val.msg
+          this.chatArray[i].count += 1
           this.chatArray[i].time = this.getNowTime()
+          let box = this.chatArray[i]
+          this.chatArray.splice(i, 1)
+          this.chatArray.unshift(box)
           return
         }
       }
+      let box = getHistory(val.usename)
+      box.push(val)
+      setHistory(val.usename, box)
       /* eslint-disable-next-line */
-      this.chatArray.push(new charHistory({usename: val.usename, img: val.img, time: this.getNowTime(), history: getHistory(val.usename), msg: val.msg}))
+      this.chatArray.unshift(new charHistory({usename: val.usename, img: val.img, time: this.getNowTime(), history: box, msg: val.msg, count: 1}))
     },
     // 更新数组
     updateArray (user) {
@@ -150,7 +166,7 @@ export default{
       }
       let data = getHistory(val.usename)
       /* eslint-disable-next-line */
-      this.chatArray.push(new charHistory({usename: val.usename, img: val.img, time: '', history: data, msg: data.length > 0 ? data[data.length - 1].msg : ''}))
+      this.chatArray.push(new charHistory({usename: val.usename, img: val.img, time: '', history: data, msg: data.length > 0 ? data[data.length - 1].msg : '', count: 0}))
     },
     getLinkMan () {
       axios.get(`api/linkman?user=${this.getUsename}`).then(result => {
@@ -280,6 +296,7 @@ export default{
           .chat_info
             line-height:25px
             p:last-child
+              height:25px
               font-size:10px
               text-align:left
             p

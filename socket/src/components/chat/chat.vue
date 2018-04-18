@@ -13,7 +13,7 @@
               <img :src="val.img" alt="" class='chatImg' :style='val.entry ===0 ? "float:right" : "float:left"' >
               <div class='chatMessage'>
                 <p class='chatName'>{{ val.usename }}</p>
-                <span class='chatInfo clear' :style='"color:"+val.color' v-html='val.msg' ></span>
+                <span class='chatInfo clear' @dblclick ='glass' :style='"color:"+val.color' v-html='val.msg' ></span>
               </div>
             </span>
           </div>
@@ -22,12 +22,16 @@
       <div class='chatFooter' >
         <div class='chatTool' >
           <input type="color" @change='colorChange' >
-          <span><i class='icon iconfont icon-libraryicon01' ></i></span>
+          <span ><i class='icon iconfont icon-libraryicon01' ></i></span>
+          <input type='file' @change='sendImg' class='selectImg' />
           <span><i class='icon iconfont icon-biaoqing' ></i></span>
         </div>
-        <textarea class='chatMessage' placeholder='请输入内容' v-model='InputMessage' @keydown.13.prevent='sendMessage' ></textarea>
+        <div class='chatMessageFather'>
+          <div  class='chatMessage' ref='editor' contenteditable='true' @keydown.13.prevent='sendMessage' v-html='InputMessage' ></div>
+        </div>
+        <!-- <textarea class='chatMessage' placeholder='请输入内容' v-model='InputMessage' @keydown.13.prevent='sendMessage' ></textarea> -->
         <div class='sendMessage' >
-          <span>注 回车键发送</span><button @click='sendMessage' >发送</button>
+          <span>注 回车键发送</span><button @click='sendTo' >发送</button>
         </div>
       </div>
     </div>
@@ -37,6 +41,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import { getHistory, setHistory } from 'assets/js/session'
+import { addClass, removeClass } from 'assets/js/dom'
 // import { getUsename } from 'assets/js/cookie'
 export default {
   data () {
@@ -46,7 +51,8 @@ export default {
         // {entry: 0, img: this.chatInfo.img, usename: this.chatInfo.usename, msg: '你好的就是结合实际黄金时代环境还是的季后赛的季后赛函数的函数见好就收大手大脚'}
       ],
       color: 'black',
-      translateLength: 0
+      translateLength: 0,
+      iSglass: false
     }
   },
   computed: {
@@ -58,6 +64,7 @@ export default {
   watch: {
     // 监听联系人变化存到session
     chatInfo (newChat, oldChat) {
+      this.$refs.chatMain.style.transition = ''
       setHistory(oldChat.usename, this.chatHistory)
       this.chatHistory = getHistory(newChat.usename)
     },
@@ -98,11 +105,36 @@ export default {
     }
   },
   methods: {
+    // 发送img
+    glass (e) {
+      if (e.target.nodeName === 'IMG') {
+        if (this.iSglass) {
+          removeClass(e.target, 'glassImg')
+          this.iSglass = false
+        } else {
+          addClass(e.target, 'glassImg')
+          this.iSglass = true
+        }
+      }
+    },
+    sendImg (e) {
+      if (e.target.files[0].type.indexOf('image') !== -1) {
+        let fs = new FileReader()
+        fs.readAsDataURL(e.target.files[0])
+        fs.onload = (e) => {
+          let img = new Image()
+          img.src = e.target.result
+          img.className = 'sendImg'
+          this.$refs.editor.appendChild(img)
+        }
+      }
+    },
     // 颜色改变
     colorChange (e) {
       this.color = e.target.value
     },
     MouseScroll (e) {
+      this.$refs.chatMain.style.transition = 'all 0.5s linear'
       let WH = this.$refs.chatBox.offsetHeight
       let NH = this.$refs.chatMain.offsetHeight
       if (WH > NH) {
@@ -111,34 +143,41 @@ export default {
       if (e.wheelDelta) {
         if (e.wheelDelta > 0) {
           // 谷歌。向上滚动
-          this.translateLength = this.translateLength - (e.wheelDelta / 1)
+          this.translateLength = this.translateLength - (e.wheelDelta / 0.5)
           this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
         } else {
           // 向下滚动
-          this.translateLength = this.translateLength - (e.wheelDelta / 1)
+          this.translateLength = this.translateLength - (e.wheelDelta / 0.5)
           this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
         }
       } else {
         // 火狐
-        if (e.detail > 0) {
-          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
-        } else {
-          this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
-        }
+        // if (e.detail > 0) {
+        //   this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        // } else {
+        //   this.$refs.chatMain.style.transform = `translate3d(0,${this.translateLength}px,0)`
+        // }
       }
     },
     sendMessage (e) {
-      if (!this.InputMessage) {
-        return
-      }
+      this.$refs.chatMain.style.transition = 'all 0.5s linear'
       if (e.keyCode === 13 && e.ctrlKey) {
-        this.InputMessage += '\n'
+        e.target.innerHTML += '<br>'
         return 0
       }
       // 绘制 //vuex 开发用
-      this.chatHistory.push({entry: 0, img: this.getHeadUrl, usename: this.getUsename, msg: this.InputMessage, color: this.color})
-      this.socket.emit('msg', {sendTo: this.chatInfo.usename, code: 1, entry: 1, msg: this.InputMessage, usename: this.getUsename, img: this.getHeadUrl, color: this.color})
+      this.sendTo()
+    },
+    sendTo () {
+      this.InputMessage = this.$refs.editor.innerHTML
+      let item = this.InputMessage
+      if (!this.InputMessage) {
+        return
+      }
+      this.chatHistory.push({entry: 0, img: this.getHeadUrl, usename: this.getUsename, msg: item, color: this.color})
+      this.socket.emit('msg', {sendTo: this.chatInfo.usename, code: 1, entry: 1, msg: item, usename: this.getUsename, img: this.getHeadUrl, color: this.color})
       this.InputMessage = ''
+      this.$refs.editor.innerHTML = this.InputMessage
       setHistory(this.chatInfo.usename, this.chatHistory)
       this.$emit('message', this.chatInfo.usename)
     },
@@ -154,6 +193,7 @@ export default {
   created () {
     setTimeout(() => {
       // 从本地获取聊天记录
+      this.$refs.chatMain.style.transition = ''
       this.chatHistory = getHistory(this.chatInfo.usename)
       let timer
       this.$refs.chatBox.addEventListener('mousewheel', (e) => {
@@ -190,6 +230,7 @@ export default {
     height:360px
     background-color :white
     .chatHistory
+      position:relative
       .chatItem
         padding:10px
         .chatSpan
@@ -197,11 +238,19 @@ export default {
             padding-bottom:5px
             font-size:12px
           .chatImg
-            padding:0px 10px
+            padding:0px 20px
             width:50px
             height:50px
             border-radius:50%
           .chatInfo
+            .sendImg
+              width:100px
+            .glassImg
+              top:0
+              position:absolute
+              left:0
+              width:100%
+              z-index:10
             text-align:left
             word-wrap:break-word
             word-break:break-all
@@ -225,11 +274,39 @@ export default {
       text-align:left
       width:100%
       height:30px
-    .chatMessage
-      width:95%
-      height:40px
-      border:none
-      outline:none
+      .selectImg
+        font-size:0px
+        left:48px
+        padding:0
+        margin:0
+        width:30px
+        height:30px
+        position:absolute
+        opacity:0
+      span
+        padding:0px 5px
+    .chatMessageFather
+      width:90%
+      height:50px
+      margin:0px auto
+      overflow-x:hidden
+      overflow-y:scroll
+      .chatMessage
+        margin:0px auto
+        text-align:left
+        line-height:25px
+        color:black
+        width:100%
+        height:50px
+        border:none
+        outline:none
+        .sendImg
+          width:50px
+    .copyInput
+      padding:0px 10px
+      position:absolute
+      color:black
+      text-align:left
     .sendMessage
       color:black
       text-align:right

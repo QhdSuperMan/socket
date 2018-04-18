@@ -38,6 +38,7 @@ export default{
   watch: {
     url (newImg) {
       this.imgChange(newImg)
+      this.url = newImg
     }
   },
   created () {
@@ -154,9 +155,7 @@ export default{
     left:160px
   .upload
     top:35%
-    left:0
-    right:0
-    margin:0px auto
+    left:60%
   .upload_icon
     position:absolute
     font-size:30px

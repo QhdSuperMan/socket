@@ -20,8 +20,9 @@
 <script>
 import fireworks from 'assets/js/fireworks'
 import { checkUser } from 'assets/js/base'
-import { mapMutations } from 'vuex'
+import { mapMutations, mapGetters } from 'vuex'
 import axios from 'axios'
+import { deleteHistory } from 'assets/js/session'
 export default{
   data () {
     return {
@@ -30,6 +31,11 @@ export default{
       user: '',
       password: ''
     }
+  },
+  computed: {
+    ...mapGetters([
+      'getUsename'
+    ])
   },
   methods: {
     constrollChange () {
@@ -75,6 +81,9 @@ export default{
               message: data.data.msg,
               type: 'success'
             })
+            if (this.getUsename !== this.user) {
+              deleteHistory()
+            }
             this.setUsename(this.user)
             setTimeout(() => {
               this.$router.push('/')
