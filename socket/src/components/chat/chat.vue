@@ -18,6 +18,10 @@
             </span>
           </div>
         </div>
+        <div class='addFriend' v-if='isAddFriend' >是否添加好友
+          <el-button size='small' >添加</el-button>
+          <el-button size='small' @click='isAddFriend=false' >取消</el-button>
+        </div>
       </div>
       <div class='chatFooter' >
         <div class='chatTool' >
@@ -39,6 +43,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import { mapGetters } from 'vuex'
 import { getHistory, setHistory } from 'assets/js/session'
 import { addClass, removeClass } from 'assets/js/dom'
@@ -46,6 +51,7 @@ import { addClass, removeClass } from 'assets/js/dom'
 export default {
   data () {
     return {
+      isAddFriend: false,
       InputMessage: '',
       chatHistory: [
         // {entry: 0, img: this.chatInfo.img, usename: this.chatInfo.usename, msg: '你好的就是结合实际黄金时代环境还是的季后赛的季后赛函数的函数见好就收大手大脚'}
@@ -105,13 +111,23 @@ export default {
     }
   },
   methods: {
+    // 检查是不是好友
+    checkFriends () {
+      axios.get(`api/checkfriends?usename=${this.chatInfo.usename}`, (result) => {
+        if (result.code === 0) {
+          this.isAddFriend = true
+        }
+      })
+    },
     // 发送img
     glass (e) {
       if (e.target.nodeName === 'IMG') {
         if (this.iSglass) {
           removeClass(e.target, 'glassImg')
           this.iSglass = false
+          e.target.style.transform = ''
         } else {
+          e.target.style.transform = this.$refs.chatMain.style.transform.replace('-', '')
           addClass(e.target, 'glassImg')
           this.iSglass = true
         }
@@ -223,6 +239,7 @@ export default {
     span
       padding:10px
   .chatbody
+    position:relative
     color:black
     overflow:hidden
     border:solid 1px black
@@ -230,7 +247,7 @@ export default {
     height:360px
     background-color :white
     .chatHistory
-      position:relative
+      position:static
       .chatItem
         padding:10px
         .chatSpan
@@ -246,9 +263,9 @@ export default {
             .sendImg
               width:100px
             .glassImg
-              top:0
               position:absolute
-              left:0
+              top:0px
+              left:0px
               width:100%
               z-index:10
             text-align:left
@@ -260,6 +277,12 @@ export default {
             padding:10px
             border-radius:10px
             background-color:rgb(82,139,188)
+    .addFriend
+      position:absolute
+      top:0px
+      width:100%
+      height:50px
+      line-height:50px
   .chatFooter
     box-sizing:border-box
     width:100%

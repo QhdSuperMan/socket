@@ -35,7 +35,7 @@
           <searchList :searchArray='searchArray' @lookDetai='goToDetail' v-if='searchisShow' @addFriends='addFriends'  class='searchList'   />
         </el-col>
         <el-col :xs='16' :xl='16' :lg='16' :sm='16' :md='16' class='Main_right' >
-          <chat v-if='chatIsShow'  :chatInfo='charData' @close='closeChat' :socket='socket' ref='char' @message='updateArray'   />
+          <chat v-if='chatIsShow'  :chatInfo='charData' @close='closeChat' :socket='socket' ref='chat' @message='updateArray'   />
           <detail  :detailObj='detailData' v-if='detailData.usename' @closeDetai='closeDetail' @addFriends='addFriends' />
         </el-col>
       </el-row>
@@ -101,7 +101,9 @@ export default{
       this.charData = val
       this.chatIsShow = true
       val.count = 0
-      this.$refs.char.$refs.chatMain.style.transition = ''
+      setTimeout(() => {
+        this.$refs.chat.checkFriends()
+      })
     },
     // 获取当前时间
     getNowTime () {
@@ -113,7 +115,7 @@ export default{
         if (this.chatArray[i].usename === val.usename) {
           this.chatArray[i].history.push(val)
           setHistory(val.usename, this.chatArray[i].history)
-          this.chatArray[i].msg = val.msg
+          this.chatArray[i].msg = this.checkImg(val.msg)
           this.chatArray[i].count += 1
           this.chatArray[i].time = this.getNowTime()
           let box = this.chatArray[i]
@@ -126,16 +128,21 @@ export default{
       box.push(val)
       setHistory(val.usename, box)
       /* eslint-disable-next-line */
-      this.chatArray.unshift(new charHistory({usename: val.usename, img: val.img, time: this.getNowTime(), history: box, msg: val.msg, count: 1}))
+      this.chatArray.unshift(new charHistory({usename: val.usename, img: val.img, time: this.getNowTime(), history: box, msg: this.checkImg(val.msg), count: 1}))
     },
     // 更新数组
     updateArray (user) {
       for (let i = 0; i < this.chatArray.length; i++) {
         if (this.chatArray[i].usename === user) {
           this.chatArray[i].history = getHistory(user)
-          this.chatArray[i].msg = this.chatArray[i].history[this.chatArray[i].history.length - 1].msg
+          this.chatArray[i].msg = this.checkImg(this.chatArray[i].history[this.chatArray[i].history.length - 1].msg)
         }
       }
+    },
+    // 检验消息中有没有图片
+    checkImg (msg) {
+      let reg = /<img.*>/
+      return msg.replace(reg, '[图片]')
     },
     // 连接socket服务
     connectSocket () {

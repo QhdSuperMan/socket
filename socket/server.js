@@ -13,6 +13,7 @@ const upload = require('./server/middle/upload')
 const search = require('./server/middle/search')
 const addFriends = require('./server/middle/addFrends')
 const linkMan = require('./server/middle/linkMan')
+const checkFriends = require('./server/middle/checkFriend')
 app.use(cookieParser('id'));
 app.use(session({
  secret: 'id',//与cookieParser中的一致
@@ -30,6 +31,7 @@ app.use('/socket',upload)
 app.use('/socket',search)
 app.use('/socket',addFriends)
 app.use('/socket',linkMan)
+app.use('/socket',checkFriends)
 app.get('/socket/imgdic',(req,res)=>{
   if(req.query.src){
     res.sendFile(`${__dirname}/public/upload/${req.query.src}`)

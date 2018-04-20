@@ -53,7 +53,7 @@ function drawRandom(){
         dianBox = []
         cxt.clearRect(0,0,cw,ch)
         init()
-        for(let i = 0; i < 15; i++) {
+        for(let i = 0; i < 10; i++) {
         let obj = {
             x: random(0 + 50, cw - 50),
             y: random(0 + 50, ch - 50)
@@ -106,7 +106,7 @@ function addColor(num){
     return result
 }
 // 画小球
-function drawBall(cx, cy, colorBox){
+function drawBall(cx, cy, colorBox, size){
     cxt.clearRect(0, 0, cw, ch)
     init()
     for(let i = 0; i < ballNum; i++){
@@ -125,7 +125,7 @@ function drawBall(cx, cy, colorBox){
             val.run()
             cxt.beginPath()
             cxt.fillStyle = val.color
-            cxt.arc(val.x, val.y, 1, 0, 2*Math.PI, 0)
+            cxt.arc(val.x, val.y, val.size, 0, 2*Math.PI, 0)
             cxt.fill()
             cxt.closePath()
     if(val.opacity<0){
@@ -143,14 +143,16 @@ function ball(cx, cy, color){
     this.speedX = (this.x-cx) !== 0 ? this.x-cx : 1
     this.speedY = (this.y-cy) !== 0 ? this.y-cy : 1
     this.opacity = 1
+    this.size = 1
     this.rgb = color
     this.color = `rgba(${this.rgb}, ${this.opacity})`
     this.run = function () {
+        this.size += 0.2 
         this.x = this.x + this.speedX
         this.y = this.y + this.speedY
         this.opacity -= 0.1
         this.color = `rgba(${this.rgb}, ${this.opacity})`
-        this.speedY += 3
+        this.speedY += 2
     }
 }
 // 存烟花类
@@ -170,7 +172,7 @@ function flower(x, y){
     this.spendY = (this.endY-this.y)/50
     this.state = true
     this.run = function(){
-    this.x += this.spendX
+        this.x += this.spendX
         this.y += this.spendY
         if (this.spendX > 0){
             if (this.x > this.endX) {
